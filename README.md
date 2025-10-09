@@ -2,6 +2,8 @@
 
 OpenAI の Sora 2 API を使った簡単なビデオ生成アプリ（サーバ + ブラウザUI）。
 
+![Screenshot](screenshot.png)
+
 ## セットアップ
 
 ### 1. 仮想環境の作成
