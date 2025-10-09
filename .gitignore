@@ -1,0 +1,12 @@
+.env
+*.mp4
+static/*.mp4
+static/*.png
+static/*.jpg
+static/*.JPG
+__pycache__/
+*.pyc
+venv/
+app.log
+
+

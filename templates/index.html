@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sora 2 ビデオ生成サービス</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 12px 0;
+            border: none;
+            background: none;
+        }
+
+        input[type="file"]::-webkit-file-upload-button {
+            visibility: hidden;
+        }
+
+        input[type="file"]::before {
+            content: 'ファイルを選択';
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            outline: none;
+            white-space: nowrap;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        input[type="file"]:hover::before {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="file"]:active::before {
+            transform: translateY(0);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #submitBtn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #submitBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        #submitBtn:active {
+            transform: translateY(0);
+        }
+
+        #submitBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .video-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 副次ボタンの見た目を小さく・控えめにする */
+        .button-secondary {
+            width: auto !important;
+            display: inline-block !important;
+            padding: 8px 12px !important;
+            font-size: 14px !important;
+            background: #e9ecef !important;
+            color: #333 !important;
+            border: 1px solid #d0d5dd !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+        }
+        .button-secondary:hover {
+            background: #dee2e6 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Sora 2 ビデオ生成</h1>
+        <p class="subtitle">テキストからビデオを生成します</p>
+
+        <form id="videoForm">
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="prompt" style="margin: 0;">プロンプト</label>
+                    <button type="button" onclick="openFolder()" style="width: auto; padding: 6px 12px; font-size: 13px; background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); margin: 0;">📁 保存先</button>
+                </div>
+                <textarea id="prompt" name="prompt" rows="6"
+                       placeholder="例: 夕焼けのビーチで波打ち際を歩くカップルの映像" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="image_upload">画像からビデオを生成 (オプション)</label>
+                <input type="file" id="image_upload" name="image_upload" accept="image/jpeg,image/png,image/webp">
+                <div id="image_preview" style="margin-top: 10px; text-align: center;">
+                    <!-- 画像プレビューがここに表示されます -->
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 20px;">
+                <label>または、最近抽出された最終フレームを選択</label>
+                <div id="last_frames_container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                    <!-- 最終フレームのサムネイルがここに表示されます -->
+                </div>
+                <input type="hidden" id="selected_last_frame_path" name="selected_last_frame_path">
+                <button type="button" id="clear_last_frame_selection_button" class="button-secondary" style="margin-top: 10px; display: inline-block; width: auto; padding: 8px 12px; font-size: 14px; background: #e9ecef; color: #333; border: 1px solid #d0d5dd; border-radius: 8px; box-shadow: none;">選択解除</button>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 15px;">
+                <div style="flex: 1;">
+                    <label for="model">モデル</label>
+                    <select id="model" name="model">
+                        <option value="sora-2">Sora 2</option>
+                        <option value="sora-2-pro">Sora 2 Pro</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label for="size">サイズ</label>
+                    <select id="size" name="size">
+                        <option value="1280x720" selected>横長 (1280x720)</option>
+                        <option value="720x1280">縦長 (720x1280)</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label for="seconds">秒数</label>
+                    <select id="seconds" name="seconds">
+                        <option value="4">4秒</option>
+                        <option value="8" selected>8秒</option>
+                        <option value="12">12秒</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn">ビデオを生成</button>
+        </form>
+
+        <div class="spinner" id="spinner"></div>
+        <div class="status" id="status"></div>
+
+        <div class="video-container" id="videoContainer">
+            <video id="video" controls></video>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('videoForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        const spinner = document.getElementById('spinner');
+        const videoContainer = document.getElementById('videoContainer');
+        const video = document.getElementById('video');
+        let startTime = null;
+        let elapsedInterval = null;
+
+        const imagePreview = document.getElementById('image_preview');
+        const imageUpload = document.getElementById('image_upload');
+        const resizeMessage = document.createElement('p');
+        resizeMessage.style.color = '#155724';
+        resizeMessage.style.backgroundColor = '#d4edda';
+        resizeMessage.style.padding = '5px 10px';
+        resizeMessage.style.borderRadius = '5px';
+        resizeMessage.style.marginTop = '10px';
+        resizeMessage.style.display = 'none';
+        imagePreview.appendChild(resizeMessage);
+
+        const clearLastFrameButton = document.getElementById('clear_last_frame_selection_button');
+
+        // ボタンの表示/非表示を制御する関数は削除します。
+
+        function openFolder() {
+            fetch('/open-folder')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Folder opened');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        function formatElapsedTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}分${secs}秒`;
+        }
+
+        function updateElapsedTime(currentStatus, progress) {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            let statusText = '';
+
+            if (currentStatus === 'queued') {
+                statusText = `⏳ キュー待機中... (${formatElapsedTime(elapsed)}経過)`;
+                if (elapsed > 300) { // 5分以上
+                    statusText += '\n※混雑しています';
+                }
+            } else if (currentStatus === 'in_progress') {
+                if (progress === 100) {
+                    statusText = `📥 ダウンロード中... (${formatElapsedTime(elapsed)}経過)`;
+                } else {
+                    statusText = `🎬 生成中... ${progress}% (${formatElapsedTime(elapsed)}経過)`;
+                }
+                if (elapsed > 600) { // 10分以上
+                    statusText += '\n※処理に時間がかかっています';
+                }
+            }
+
+            status.textContent = statusText;
+        }
+
+        async function loadLastFrames() {
+            const response = await fetch('/list-last-frames');
+            const data = await response.json();
+            const container = document.getElementById('last_frames_container');
+            container.innerHTML = ''; // クリア
+
+            if (data.last_frames && data.last_frames.length > 0) {
+                data.last_frames.forEach(frame_path => {
+                    const img = document.createElement('img');
+                    img.src = frame_path;
+                    img.alt = frame_path.split('/').pop();
+                    img.style.width = '100px';
+                    img.style.height = 'auto';
+                    img.style.cursor = 'pointer';
+                    img.style.border = '2px solid transparent';
+                    img.style.borderRadius = '5px';
+                    img.style.transition = 'border-color 0.2s';
+                    img.classList.add('last-frame-thumbnail');
+
+                    img.addEventListener('click', () => {
+                        // 既存の選択を解除
+                        document.querySelectorAll('.last-frame-thumbnail').forEach(thumb => {
+                            thumb.style.borderColor = 'transparent';
+                        });
+                        // 新しい選択を適用
+                        img.style.borderColor = '#007bff';
+                        document.getElementById('selected_last_frame_path').value = frame_path;
+                        // 画像アップロードフィールドをクリア
+                        document.getElementById('image_upload').value = '';
+                        document.getElementById('image_preview').innerHTML = '';
+                        document.getElementById('image_preview').style.display = 'none';
+                        // ボタンの表示は常に`block`になるため、ここでは何もしません。
+                    });
+                    container.appendChild(img);
+                });
+                document.getElementById('clear_last_frame_selection_button').style.display = 'block'; // 最終フレームがある場合、ボタンは表示されたままにする（初期HTMLで既に表示）
+                document.getElementById('selected_last_frame_path').value = ''; // 初期選択をリセット
+            } else {
+                container.innerHTML = '<p>抽出された最終フレームはありません。</p>';
+                // `clearLastFrameButton`の表示は、常に`block`になるため、ここでは何もしません。
+            }
+        }
+
+        // ページ読み込み時に最終フレームをロード
+        loadLastFrames();
+
+        // 最終フレーム選択解除ボタンのイベントリスナー
+        document.getElementById('clear_last_frame_selection_button').addEventListener('click', () => {
+            document.getElementById('selected_last_frame_path').value = '';
+            document.querySelectorAll('.last-frame-thumbnail').forEach(thumb => {
+                thumb.style.borderColor = 'transparent';
+            });
+            // ボタンの表示は常に`block`になるため、ここでは何もしません。
+            // 画像アップロードフィールドもクリアし、プレビューも削除
+            document.getElementById('image_upload').value = '';
+            document.getElementById('image_preview').innerHTML = '';
+            document.getElementById('image_preview').style.display = 'none';
+        });
+
+        // 画像アップロードが変更されたら最終フレームの選択を解除
+        document.getElementById('image_upload').addEventListener('change', () => {
+            document.getElementById('selected_last_frame_path').value = '';
+            document.querySelectorAll('.last-frame-thumbnail').forEach(thumb => {
+                thumb.style.borderColor = 'transparent';
+            });
+            // ボタンの表示は常に`block`になるため、ここでは何もしません。
+            if (document.getElementById('image_upload').files.length > 0) {
+                // プレビュー表示ロジックをここに維持
+                const file = document.getElementById('image_upload').files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '150px';
+                    img.style.maxHeight = '150px';
+                    document.getElementById('image_preview').innerHTML = '';
+                    document.getElementById('image_preview').appendChild(img);
+                    document.getElementById('image_preview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('image_preview').innerHTML = '';
+                document.getElementById('image_preview').style.display = 'none';
+                // ボタンの表示は常に`block`になるため、ここでは何もしません。
+            }
+        });
+
+        // 初回ロード時に既存の画像プレビューロジックを起動
+        if (document.getElementById('image_upload').files.length > 0) {
+            document.getElementById('image_upload').dispatchEvent(new Event('change'));
+            // ボタンの表示は常に`block`になるため、ここでは何もしません。
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const prompt = document.getElementById('prompt').value;
+            const model = document.getElementById('model').value;
+            const seconds = document.getElementById('seconds').value;
+            const size = document.getElementById('size').value;
+            let imageFile = null;
+            let selectedLastFrame = document.getElementById('selected_last_frame_path').value;
+
+            if (imageUpload.files.length > 0) {
+                imageFile = imageUpload.files[0];
+                selectedLastFrame = ''; // 新しい画像をアップロードしたら最終フレームの選択をリセット
+            } else if (selectedLastFrame) {
+                // 最終フレームが選択されている場合、Fetch APIでファイルを読み込む
+                try {
+                    const response = await fetch(selectedLastFrame);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const blob = await response.blob();
+                    imageFile = new File([blob], selectedLastFrame.split('/').pop(), { type: blob.type });
+                    console.log('Selected last frame converted to File object:', imageFile);
+                } catch (error) {
+                    console.error('Error fetching selected last frame:', error);
+                    updateStatus('エラー: 最終フレームの読み込みに失敗しました。', 'error');
+                    hideSpinner();
+                    return;
+                }
+            }
+
+            if (!prompt && !imageFile) {
+                updateStatus('プロンプトまたは画像をアップロード/選択してください。', 'error');
+                hideSpinner();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            spinner.style.display = 'block';
+            status.className = 'status processing';
+            status.textContent = 'リクエスト送信中...';
+            status.style.display = 'block';
+            videoContainer.style.display = 'none';
+            startTime = Date.now();
+
+            // 経過時間の更新を開始
+            if (elapsedInterval) clearInterval(elapsedInterval);
+            elapsedInterval = setInterval(() => {
+                updateElapsedTime('queued', 0);
+            }, 1000);
+
+            try {
+                const formData = new FormData();
+                formData.append('prompt', prompt);
+                formData.append('model', model);
+                formData.append('seconds', seconds);
+                formData.append('size', size);
+                if (imageFile) {
+                    formData.append('image_file', imageFile);
+                }
+
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                const videoId = data.video_id;
+                if (data.resize_info) {
+                    resizeMessage.textContent = data.resize_info;
+                    resizeMessage.style.display = 'block';
+                } else {
+                    resizeMessage.style.display = 'none';
+                }
+                checkStatus(videoId);
+            } catch (error) {
+                if (elapsedInterval) clearInterval(elapsedInterval);
+                spinner.style.display = 'none';
+                status.className = 'status error';
+                status.textContent = `エラー: ${error.message}`;
+                submitBtn.disabled = false;
+            }
+        });
+
+        async function checkStatus(videoId) {
+            try {
+                const response = await fetch(`/status/${videoId}`);
+                const data = await response.json();
+
+                if (data.status === 'completed') {
+                    if (elapsedInterval) clearInterval(elapsedInterval);
+                    spinner.style.display = 'none';
+                    const totalTime = Math.floor((Date.now() - startTime) / 1000);
+                    status.className = 'status success';
+                    status.textContent = `✅ ビデオが生成されました！(${formatElapsedTime(totalTime)})`;
+
+                    video.src = data.video_path;
+                    videoContainer.style.display = 'block';
+                    submitBtn.disabled = false;
+
+                    // アップロードされた画像ファイルをクリア
+                    document.getElementById('image_upload').value = '';
+                    document.getElementById('image_preview').innerHTML = ''; // 画像プレビューもクリア
+                    resizeMessage.style.display = 'none'; // リサイズメッセージもクリア
+                    // ボタンの表示は常に`block`になるため、ここでは何もしません。
+
+                    // 直近の最終フレームを自動選択（連続生成しやすくする）
+                    try {
+                        await loadLastFrames();
+                        // videoIdの最終フレームを探して選択状態にする
+                        const container = document.getElementById('last_frames_container');
+                        const target = Array.from(container.querySelectorAll('img')).find(img => img.src.endsWith(`${videoId}_last_frame.png`));
+                        if (target) {
+                            document.querySelectorAll('.last-frame-thumbnail').forEach(thumb => {
+                                thumb.style.borderColor = 'transparent';
+                            });
+                            target.style.borderColor = '#007bff';
+                            document.getElementById('selected_last_frame_path').value = target.src.replace(location.origin, '');
+                        }
+                    } catch (e) {
+                        console.error('Auto-select last frame failed', e);
+                    }
+                } else if (data.status === 'failed') {
+                    if (elapsedInterval) clearInterval(elapsedInterval);
+                    throw new Error(data.error || 'ビデオ生成に失敗しました');
+                } else {
+                    // 経過時間更新を最新のステータスで
+                    if (elapsedInterval) clearInterval(elapsedInterval);
+                    elapsedInterval = setInterval(() => {
+                        updateElapsedTime(data.status, data.progress || 0);
+                    }, 1000);
+                    updateElapsedTime(data.status, data.progress || 0);
+
+                    setTimeout(() => checkStatus(videoId), 3000);
+                }
+            } catch (error) {
+                if (elapsedInterval) clearInterval(elapsedInterval);
+                spinner.style.display = 'none';
+                status.className = 'status error';
+                status.textContent = `エラー: ${error.message}`;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+
