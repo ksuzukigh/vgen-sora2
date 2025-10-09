@@ -7,18 +7,19 @@ OpenAI の Sora 2 API を使った簡単なビデオ生成アプリ（サーバ 
 ### 1. 仮想環境の作成
 
 ```bash
-cd /Users/keiichi/Desktop/Work/python/vgen-sora2
+git clone https://github.com/ksuzukigh/vgen-sora2.git
+cd vgen-sora2
 conda create -n vgen-sora2 python=3.9 -y
 conda activate vgen-sora2
 ```
 
-### 2. 依存パッケージのインストール
+### 2. 依存パッケージのインストール（Windows/Mac 共通）
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. APIキーの設定
+### 3. APIキーの設定（`.env` を作成）
 
 `.env`ファイルを編集し、OpenAI APIキーを設定：
 
@@ -26,7 +27,7 @@ pip install -r requirements.txt
 OPENAI_API_KEY=your-actual-api-key-here
 ```
 
-## 起動方法
+## 起動方法（Windows/Mac 共通）
 
 ```bash
 conda activate vgen-sora2
