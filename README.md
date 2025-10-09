@@ -66,3 +66,13 @@ python app.py
 - 生成されたビデオは`static/`フォルダに保存されます（起動時に7日より古いmp4は自動削除）
 - API使用料金が発生します
 
+## 補足
+- このアプリは **Sora 2 API** を使用しています（参考: [Video Generation Guide](https://platform.openai.com/docs/guides/video-generation?lang=python)）。
+- 利用には **組織の本人確認（Organization Verification）** が必要な場合があります（参考: [OpenAI 組織設定](https://platform.openai.com/settings/organization)）。
+- **テキスト to ビデオ**／**イメージ to ビデオ** の両方に対応しています。
+- 生成秒数は **4秒／8秒／12秒** から選べます。
+- サイズは **縦長（720x1280）**／**横長（1280x720）** のいずれかを選べます。
+- API経由のため **Soraの「すかし」は入りません**。
+- **商用利用は可能** ですが、OpenAIの規約・ポリシー等に従ってください。
+- 動画生成時に **最終フレームをPNGで保存** し、サムネ一覧から選択して続編（延長）を簡単に生成できます。
+
