@@ -232,6 +232,7 @@ def generate():
         return jsonify({'video_id': video.id, 'status': video.status, 'resize_info': resize_info})
     except Exception as e:
         app.logger.error(f'ビデオ生成エラー: {str(e)}', exc_info=True)
+        return jsonify({'error': f'ビデオ生成エラー: {str(e)}'}), 500
 
 @app.route('/status/<video_id>')
 def check_status(video_id):
@@ -328,9 +329,21 @@ def get_video(video_id):
 @app.route('/open-folder')
 def open_folder():
     import subprocess
-    subprocess.run(['open', str(static_dir.absolute())])
-    app.logger.info(f'[DEBUG] Opened folder: {static_dir.absolute()}')
-    return jsonify({'status': 'ok'})
+    import platform
+    try:
+        path = str(static_dir.absolute())
+        system = platform.system().lower()
+        if 'windows' in system:
+            subprocess.run(['explorer', path])
+        elif 'darwin' in system:
+            subprocess.run(['open', path])
+        else:
+            subprocess.run(['xdg-open', path])
+        app.logger.info(f'[DEBUG] Opened folder: {static_dir.absolute()} ({system})')
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        app.logger.error(f'/open-folder error: {e}', exc_info=True)
+        return jsonify({'error': f'フォルダを開けませんでした: {str(e)}'}), 500
 
 @app.route('/list-last-frames')
 def list_last_frames():
