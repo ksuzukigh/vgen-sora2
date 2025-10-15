@@ -233,7 +233,7 @@
 
             <div class="form-group" style="margin-top: 20px;">
                 <label>または、最近抽出された最終フレームを選択</label>
-                <div id="last_frames_container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
+                <div id="last_frames_container" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;">
                     <!-- 最終フレームのサムネイルがここに表示されます -->
                 </div>
                 <input type="hidden" id="selected_last_frame_path" name="selected_last_frame_path">
@@ -353,8 +353,10 @@
                     const img = document.createElement('img');
                     img.src = frame_path;
                     img.alt = frame_path.split('/').pop();
-                    img.style.width = '100px';
-                    img.style.height = 'auto';
+                    img.style.width = '120px';
+                    img.style.height = '120px';
+                    img.style.objectFit = 'contain';
+                    img.style.backgroundColor = '#f8f9fa';
                     img.style.cursor = 'pointer';
                     img.style.border = '2px solid transparent';
                     img.style.borderRadius = '5px';
